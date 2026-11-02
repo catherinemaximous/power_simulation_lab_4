@@ -16,6 +16,8 @@ project. When you are done you will have:
 - Run a sensitivity analysis for a fixed sample, and written a justification
   whose numbers come from your code
 - Explored the trade-off between more people and more trials
+- Computed effect sizes from raw data and from the statistics a paper reports,
+  and seen how uncertain a single study's effect size is
 - Made a power curve and a sample size justification for your project
 
 The running example is the tea experiment from Labs 2 and 3, until Part 3, when
@@ -63,10 +65,12 @@ functions defined in Parts 2 and 3, so run those chunks first. Fill in each
 | 5. Small telescopes | Find d33 and test the 2.5× rule | 15 min |
 | 6. Fixed samples | Sensitivity analysis, smallest effect of interest, and a justification paragraph | 15 min |
 | 7. People or trials | Trade participants for trials on a fixed budget | 10 min |
-| 8. Your project | Power analysis, power curve, and justification for your study | the rest |
+| 8. Getting an effect size | Cohen's d by hand, d_z vs. d_av, converting reported statistics, and a CI on d | 20 min |
+| 9. Your project | Power analysis, power curve, and justification for your study | the rest |
 | Bonus | Power for a mixed model by simulation | optional |
 
-**Short on time?** Do Parts 1, 3, 6, and 8.
+**Short on time?** Do Parts 1, 3, 6, and 9, plus Part 8 if your paper doesn't
+report an effect size.
 
 `error: true` is set at the top of the file, so **Render works even while
 chunks are unfinished**: the unfinished chunks show their error in red.
@@ -78,7 +82,7 @@ chunks are unfinished**: the unfinished chunks show their error in red.
 Commit as you go. When you are finished, render once more, commit with a
 message like `Finish power lab`, **Push origin**, and submit the link to your
 repository however your instructor asks. Rendered `.html` files are ignored by
-git, so only your `.qmd` is pushed. Your Part 8 paragraph goes into the Power
+git, so only your `.qmd` is pushed. Your Part 9 paragraph goes into the Power
 Analysis section of your own project report.
 
 ## What is in this repository
