@@ -266,7 +266,9 @@ To do: Use `pwr.t.test()` to find d33. You know `n` and `power`, so leave out `d
 
 ```{r}
 original_n <- 20
+```
 
+```{r}
 d33 <- pwr.t.test(n = original_n, power = ___, sig.level = .05)$d
 d33
 ```
