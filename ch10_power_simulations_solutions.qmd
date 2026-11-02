@@ -237,7 +237,7 @@ To do: Answer these questions.
 **Answer.**
 
 1.  About 20%, not 80%.
-2.  176 per group (`n_for_80(0.3)`), compared to a median plan of about 26 per group.
+2.  176 per group (`n_for_80(0.3)`), compared to a median plan of about 28 per group.
 3.  Very little. Most of these replications will miss a real effect, so a null result says little about whether the original was right. This is the argument in Data Colada [4]. The same logic explains "post-hoc power": plugging a study's own observed effect into a power formula just restates its p-value.
 
 # Part 4: Why you shouldn't power on your pilot
@@ -465,7 +465,7 @@ trade_off_low_person
 
 1.  People, for this setup. Power keeps climbing as you trade trials for people, though the gains shrink. This simulation treats a new person as free, which isn't true: recruiting takes time and credits, and a real task needs enough trials per person to work at all, so in practice you'd stop well before 3 trials each.
 2.  It levels off a little under 50%, at the power you'd have if each person's score had no trial noise at all: `pwr.t.test(n = 20, d = 0.6)`. Trial noise goes to zero with more trials, but `sd_person` doesn't.
-3.  With little variation between people, trials do most of the work, and power is already very high with a small number of people run for many trials. That's when deep sampling is a good design, as long as your claim is about a process most people share and not about variation across a population.
+3.  With little variation between people, trials do much more of the work: 5 people per group run for 240 trials each now have about 70% power, compared to about 15% before. More people still helps, but the curve is much flatter. That's when deep sampling is a good design, as long as your claim is about a process most people share and not about variation across a population.
 
 # Part 8: Your project
 

@@ -18,5 +18,5 @@ Thumbs.db
 
 # Rendered output. Delete these lines if your instructor asks you to
 # commit the rendered HTML with your assignment.
-ch8_reliability_simulations*.html
-ch8_reliability_simulations*_files/
+ch10_power_simulations*.html
+ch10_power_simulations*_files/
