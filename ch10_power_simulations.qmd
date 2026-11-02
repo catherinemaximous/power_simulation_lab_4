@@ -1,0 +1,508 @@
+---
+title: "Power and Sample Size Planning"
+subtitle: "PSYC 201A, Simulation Lab 4"
+author: "Your name here"
+date: today
+format:
+  html:
+    toc: true
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+  error: true
+---
+
+## Tips before getting started
+
+This document accompanies the sampling and sample size planning practicum in Psych 201a (Experimentology, Ch. 10). In Lab 2 you built a power curve when you got to choose the true effect. Real planning is harder, because nobody tells you the true effect. Here you will see what goes wrong when you plan from a published effect or a pilot, what the alternatives are, and then write the sample size justification for your own project.
+
+Open this file by double-clicking `power_simulation_lab_4.Rproj` first, then opening it from the Files pane. You need the tidyverse, which you already have, and one new package, `pwr`.
+
+To understand what a function does, type `?function_name` in the Console (e.g., `?pwr.t.test`).
+
+`ch10_power_simulations_solutions.qmd` is the answer key. Try each part first.
+
+`error: true` is set at the top of this file, so it still renders while some chunks are unfinished: those chunks show their error in red. Each part starts with its own `set.seed()`. Later parts use the functions defined in Parts 2 and 3, so run those first.
+
+**Short on time?** Do Parts 1, 3, 6, and 8. Part 8 is the one you hand in.
+
+# Setup
+
+```{r}
+set.seed(2026) # same "random" numbers on every render
+```
+
+## Import the libraries
+
+```{r}
+#| eval: false
+install.packages("pwr") # run once
+```
+
+```{r}
+library(tidyverse)
+library(pwr)
+
+theme_set(theme_classic(base_size = 14))
+```
+
+# Part 1: Probing your power intuitions
+
+Before you touch any code, guess the power of each of these studies. Use `alpha = .05`, two-sided. Type your guesses into the table. Be honest: this works better if you are wrong.
+
+| Test | Effect | Total N | Your guess | Power from `pwr` |
+|---|---|---|---|---|
+| Two-group t-test | d = .5 | 24 | | |
+| Two-group t-test | d = .8 | 36 | | |
+| Two-group t-test | d = .3 | 120 | | |
+| Correlation | r = .5 | 36 | | |
+| Correlation | r = .3 | 80 | | |
+
+Now check them. **Watch out:** in `pwr.t.test()`, `n` means participants *per group*, not the total. This is the most common way to get a power analysis wrong, in `pwr` and in G\*Power. In `pwr.r.test()`, `n` is just the number of people.
+
+To do: Fill in each `___`, then fill in the last column of the table.
+
+```{r}
+pwr.t.test(n = ___, d = 0.5, sig.level = .05)$power
+pwr.t.test(n = ___, d = ___, sig.level = .05)$power
+pwr.t.test(n = ___, d = ___, sig.level = .05)$power
+pwr.r.test(n = ___, r = 0.5, sig.level = .05)$power
+pwr.r.test(n = ___, r = ___, sig.level = .05)$power
+```
+
+Power depends on four numbers: `n`, the effect size, `sig.level`, and `power`. Give `pwr` any three and it solves for the fourth. This is the classic **a priori power analysis**: leave `n` out, and set `power`.
+
+To do: How many participants, in total, do you need for 80% power to detect d = .5? What about d = .3? Round up, because you can't run part of a person, and remember that `n` is per group.
+
+```{r}
+n_d5 <- pwr.t.test(d = 0.5, power = ___, sig.level = .05)$n
+n_d3 <- pwr.t.test(d = ___, power = .8, sig.level = .05)$n
+
+ceiling(n_d5) * 2 # total N
+ceiling(n_d3) * 2
+```
+
+# Part 2: Same answer, two ways
+
+G\*Power, `pwr`, and simulation all answer the same question. Formulas are instant, but they exist only for standard tests. Simulation is slower, but it works for any design you can write down as code. When a formula exists, the two should agree, and that is a useful check on your simulation.
+
+Here is the machinery from Lab 2, already written for you.
+
+```{r}
+make_tea_data <- function(n_total = 48,
+                          sigma = 1.25, # sd of ratings within a condition
+                          delta = 1.5) { # difference between conditions
+  n_half <- n_total / 2
+  tibble(condition = c(rep("milk first", n_half), rep("tea first", n_half)),
+         rating = c(round(rnorm(n_half, mean = 3.5 + delta, sd = sigma)),
+                    round(rnorm(n_half, mean = 3.5, sd = sigma)))) |>
+    mutate(rating = pmin(pmax(rating, 1), 10)) # keep ratings on the 1-10 scale
+}
+
+run_one_experiment <- function(n_total, delta) {
+  this_experiment <- make_tea_data(n_total = n_total, delta = delta)
+  t.test(rating ~ condition, data = this_experiment, var.equal = TRUE)$p.value
+}
+
+estimate_power <- function(n_total, delta, n_sims = 500) {
+  mean(map_dbl(1:n_sims, \(i) run_one_experiment(n_total, delta)) < .05)
+}
+```
+
+`pwr` needs Cohen's d, so divide the difference in scale points by the standard deviation: `delta / sigma`. With `delta = 1` and `sigma = 1.25`, d = .8.
+
+To do: Fill in the blanks to compute power at each sample size both ways. This runs 5,000 simulated experiments, so give it several seconds.
+
+```{r}
+set.seed(2)
+
+power_check <- tibble(n_total = seq(10, 100, by = 10)) |>
+  mutate(simulated = map_dbl(n_total, \(n) estimate_power(n, delta = ___)),
+         formula = map_dbl(n_total, \(n) pwr.t.test(n = ___, d = ___)$power))
+
+power_check
+```
+
+```{r}
+power_check |>
+  ggplot(aes(x = n_total)) +
+  geom_line(aes(y = formula)) +
+  geom_point(aes(y = simulated), color = "steelblue", size = 2) +
+  geom_hline(yintercept = .8, linetype = "dashed") +
+  labs(x = "Total participants", y = "Power",
+       title = "Line: pwr. Dots: simulation.")
+```
+
+To do: Do they agree? If the dots sit a little below the line, why might that be? (Hint: look at what `make_tea_data()` does to the ratings. What does `pwr` assume about them?)
+
+# Part 3: Why you shouldn't power on the published effect
+
+In Lab 2 you got to choose the true effect. The usual real-world move is to look up the original paper and plug in its effect size. Let's see what happens if you do that.
+
+`simulate_study()` runs one two-group study with a true effect of `true_d`, and returns the observed effect size and p-value. The observed d comes from the t statistic, using the trick from the slides: d = t × √(2/n), where n is the sample size per group.
+
+```{r}
+simulate_study <- function(n_per_group, true_d) {
+  treatment <- rnorm(n_per_group, mean = true_d, sd = 1)
+  control <- rnorm(n_per_group, mean = 0, sd = 1)
+  test <- t.test(treatment, control, var.equal = TRUE)
+  tibble(d_hat = unname(test$statistic) * sqrt(2 / n_per_group),
+         p = test$p.value)
+}
+
+simulate_study(n_per_group = 20, true_d = 0.3) # run this a few times
+```
+
+Imagine a whole literature: 5,000 labs each run the same study with 20 people per group. The true effect is d = .3.
+
+```{r}
+set.seed(3)
+
+literature <- tibble(study = 1:5000) |>
+  mutate(result = map(study, \(i) simulate_study(n_per_group = 20, true_d = 0.3))) |>
+  unnest(result)
+```
+
+Journals mostly publish significant results in the predicted direction.
+
+To do: Add a column `published` that is `TRUE` when `p < .05` and `d_hat > 0`. Then compute two means: `d_hat` across all studies, and `d_hat` across the published ones only.
+
+```{r}
+literature <- literature |>
+  mutate(published = ___)
+
+literature |>
+  group_by(published) |>
+  summarize(n_studies = n(),
+            mean_d = ___)
+
+mean(literature$d_hat) # all studies
+```
+
+```{r}
+literature |>
+  ggplot(aes(x = d_hat, fill = published)) +
+  geom_histogram(binwidth = .05, boundary = 0) +
+  geom_vline(xintercept = 0.3, linetype = "dashed") +
+  labs(x = "Observed effect size (d)", y = "Number of studies",
+       title = "Dashed line: the true effect")
+```
+
+To do: What percent of studies got published, and what does that tell you about the power of these studies? What is the average published effect, compared to the truth?
+
+Now you read one of those published papers and plan a replication with 80% power, using its effect size. `n_for_80()` does the a priori calculation.
+
+```{r}
+n_for_80 <- function(d) {
+  ceiling(pwr.t.test(d = d, power = .8, sig.level = .05)$n)
+}
+
+n_for_80(0.8) # what you'd plan from a typical published study (per group)
+```
+
+To do: For every published study, work out the planned sample size, then the power that replication *actually* has, given that the truth is d = .3. Fill in the blanks. This does about 750 power analyses, so give it a few seconds.
+
+```{r}
+replications <- literature |>
+  filter(published) |>
+  mutate(planned_n = map_dbl(d_hat, n_for_80),
+         actual_power = map_dbl(planned_n, \(n) pwr.t.test(n = n, d = ___)$power))
+
+mean(replications$actual_power)
+```
+
+```{r}
+replications |>
+  ggplot(aes(x = actual_power)) +
+  geom_histogram(binwidth = .05, boundary = 0, fill = "steelblue") +
+  geom_vline(xintercept = .8, linetype = "dashed") +
+  xlim(0, 1) +
+  labs(x = "Actual power of the replication", y = "Number of replications",
+       title = "Dashed line: the 80% they claimed")
+```
+
+To do: Answer these questions.
+
+1.  Everyone claimed 80% power. What did they really have, on average?
+2.  How many participants per group would it have taken to have 80% power for the true effect? Compare that to `median(replications$planned_n)`.
+3.  If one of these replications comes out non-significant, how much does that tell you?
+
+# Part 4: Why you shouldn't power on your pilot
+
+The next idea is usually "fine, I'll run a small pilot and use that effect size." There's no publication filter on your own pilot, so maybe that's better?
+
+Say the true effect is d = .4, and you pilot 10 people per group.
+
+To do: Write this part yourself, following Part 3.
+
+1.  Simulate 2,000 pilots with `simulate_study()` and call them `pilots`.
+2.  Add a column `go`: only continue if the pilot looks promising, `d_hat > 0.2`. Lots of labs do this informally.
+3.  What percent of pilots lead you to abandon a study of a real effect?
+4.  For the pilots that continue, compute `planned_n` and `actual_power` as in Part 3 (the truth is now d = .4).
+5.  Plot a histogram of `planned_n`, and report the 10th, 50th, and 90th percentiles with `quantile()`.
+
+```{r}
+set.seed(4)
+
+# your code here
+
+```
+
+```{r}
+```
+
+To do: The sample you actually needed is `n_for_80(0.4)` per group. What did your pilots tell you to run instead? Would you trust an effect size from your 10-per-group pilot?
+
+# Part 5: Small telescopes, or how big should a replication be?
+
+So we can't trust the original effect. For replications there's a neat way around that. Simonsohn (2015) changes the question from "is the effect exactly what they said?" to "is the effect too small for the original study to have seen?"
+
+Call **d33** the effect size that the original study had 33% power to detect. If the true effect is smaller than that, the original study was a telescope too small to see it. The rule of thumb on the slides says that a replication with 2.5 times the original sample has about 80% power to rule out d33 when the true effect is zero. Let's test that rule.
+
+Suppose the original study had 20 people per group.
+
+To do: Use `pwr.t.test()` to find d33. You know `n` and `power`, so leave out `d`.
+
+```{r}
+original_n <- 20
+
+d33 <- pwr.t.test(n = original_n, power = ___, sig.level = .05)$d
+d33
+```
+
+Now simulate replications with **no true effect**, and ask how often we can reject d33. Rejecting means the replication's estimate is reliably *below* d33, so it's a one-sided test of the difference against `d33`, not against zero. `sd = 1` here, so the difference between means is already in units of d.
+
+```{r}
+rejects_d33 <- function(n_per_group, d33, true_d = 0) {
+  treatment <- rnorm(n_per_group, mean = true_d, sd = 1)
+  control <- rnorm(n_per_group, mean = 0, sd = 1)
+  t.test(treatment, control, mu = d33, alternative = "less", var.equal = TRUE)$p.value < .05
+}
+
+power_to_reject <- function(n_per_group, d33, true_d = 0, n_sims = 2000) {
+  mean(map_lgl(1:n_sims, \(i) rejects_d33(n_per_group, d33, true_d)))
+}
+```
+
+To do: What's the power to reject d33 with 2.5 × the original sample? With the same sample as the original?
+
+```{r}
+set.seed(5)
+
+power_to_reject(n_per_group = ___, d33 = d33)
+power_to_reject(n_per_group = ___, d33 = d33)
+```
+
+To do: Plot power to reject d33 as replication size goes from 1× to 4× the original.
+
+```{r}
+telescope <- tibble(multiplier = seq(1, 4, by = 0.5)) |>
+  mutate(n_per_group = multiplier * original_n,
+         power = map_dbl(n_per_group, \(n) power_to_reject(n, d33)))
+
+# your ggplot here
+
+```
+
+To do: Answer these questions.
+
+1.  Does the 2.5× rule hold up?
+2.  Why is this a better plan for a replication than powering on the original effect?
+3.  What are the possible conclusions if your replication is *not* significant? When can you say "the effect is too small for the original study to have detected" and when can you only say "inconclusive"?
+
+# Part 6: When your sample is fixed, flip the question
+
+Most student projects are limited by resources: credits on SONA, weeks left in the quarter. When N is set by what's feasible, don't pretend the N came from a power analysis. Say what is true: here is the N we can get, and here is what it can and can't detect. Then a reader can decide if the study is informative. This is a **sensitivity analysis**.
+
+Suppose you can get 120 SONA participants, 60 per group.
+
+To do: Fill in the blanks. What's the smallest effect you have 80% power to detect? What's your power across a range of effect sizes?
+
+```{r}
+fixed_n <- 60 # per group
+```
+
+```{r}
+smallest_d <- pwr.t.test(n = fixed_n, power = .8, sig.level = .05)$___
+smallest_d
+
+sensitivity <- tibble(d = seq(0.1, 1, by = 0.05)) |>
+  mutate(power = map_dbl(d, \(this_d) pwr.t.test(n = ___, d = ___)$power))
+```
+
+To do: Plot `power` against `d`. Add a dashed line at .8.
+
+```{r}
+```
+
+The other half of this argument is the **smallest effect size of interest** (SESOI): the smallest effect you would actually care about. That's a scientific decision, not a statistical one. If your smallest effect of interest is d = .3, the curve above says how likely you are to miss it, and you can decide if you're comfortable with that.
+
+To do: Finish this justification, following the example on the slides. The numbers should come from your code, using inline R as in Lab 1. Replace each `___`.
+
+> We did not have strong prior information about the likely effect size, so we were interested in effects as small as d = .3. We were limited to a maximum sample of `r fixed_n * 2` SONA participants. With this sample we have `r "___"`% power for d = .3, `r "___"`% power for d = .5, and 80% power for effects of d = `r "___"` or larger.
+
+To do: In the reading responses, someone asked how a study can be "overpowered." With 100,000 people per group, what's your power for d = .02? Is more data a problem? What *is* the problem?
+
+```{r}
+pwr.t.test(n = ___, d = ___)$power
+```
+
+# Part 7: More people or more trials?
+
+So far each person gave us one number. Many of your studies have many trials per person, and then "sample size" has two parts. Think back to Lab 3: averaging more ratings per person makes each person's score more reliable. But people also differ from each other, and more trials can't fix that.
+
+Each person's average across `n_trials` trials has two sources of variability: real differences between people (`sd_person`) and trial noise, which shrinks as trials go up (`sd_trial / sqrt(n_trials)`).
+
+```{r}
+simulate_person_means <- function(n_per_group, n_trials, true_diff,
+                                  sd_person = 1, sd_trial = 4) {
+  sd_of_means <- sqrt(sd_person^2 + sd_trial^2 / n_trials)
+  treatment <- rnorm(n_per_group, mean = true_diff, sd = sd_of_means)
+  control <- rnorm(n_per_group, mean = 0, sd = sd_of_means)
+  t.test(treatment, control, var.equal = TRUE)$p.value
+}
+
+power_people_trials <- function(n_per_group, n_trials, true_diff = 0.6,
+                                sd_person = 1, n_sims = 1000) {
+  mean(map_dbl(1:n_sims, \(i) simulate_person_means(n_per_group, n_trials, true_diff,
+                                                    sd_person = sd_person)) < .05)
+}
+```
+
+Suppose your budget is 1,200 trials per group. You could run a few people for a long time, or many people for a short time.
+
+To do: Fill in `n_trials` so that every row uses the same 1,200 trials per group, then plot power against `n_per_group`.
+
+```{r}
+set.seed(7)
+
+trade_off <- tibble(n_per_group = c(5, 10, 20, 40, 60, 120, 240, 400)) |>
+  mutate(n_trials = ___,
+         power = map2_dbl(n_per_group, n_trials, power_people_trials))
+
+trade_off
+```
+
+```{r}
+```
+
+To do: Answer these questions.
+
+1.  Holding total trials fixed, which matters more, people or trials? Do the gains shrink at some point? What does this leave out about the real cost of each new participant?
+2.  Now keep `n_per_group = 20` and raise `n_trials` to 100, 1000, and 10000. What does power level off at, and why can't more trials get you past it?
+3.  What would change if most of the noise were between trials rather than between people? Rerun `trade_off` with `power_people_trials(n, k, sd_person = 0.2)`. How does this relate to deep-sampling studies, with a few participants and thousands of trials?
+
+```{r}
+```
+
+# Part 8: Your project
+
+This is what you turn in. The goal is a **Power Analysis** section you can paste into your report and your preregistration. It should make an honest case for your N, and it doesn't have to be a classic power analysis at all.
+
+**1. Name your key test.** Which single test most directly captures the claim you're replicating or simulating? Write it here.
+
+*Your answer:*
+
+**2. Get an effect size.** If the paper doesn't report one, you can usually compute it.
+
+-   Two-group t-test: d = t × √(2/n), with n per group
+-   Paired t-test: d_z = t / √N
+-   Missing SD: SD = SEM × √n. If you only have a figure, digitize it with [WebPlotDigitizer](https://automeris.io/WebPlotDigitizer/)
+
+Example: a paper reports a paired t(44) = 3.98. Then N = 45, and d_z = 3.98 / √45 = .59. For a paired t-test, `pwr` needs `type = "paired"`, and `n` is the number of people.
+
+```{r}
+pwr.t.test(d = 3.98 / sqrt(45), power = .8, type = "paired")$n
+```
+
+**3. Decide what you'll plan for.** Don't stop at the published effect, for the reasons in Part 3. Compute at least two of these:
+
+-   Power for **half** the original effect, a simple correction for inflation (Camerer et al., 2018, on the slides, planned for 75% and then 50% of the original effect)
+-   The **2.5× original N** rule (Part 5)
+-   The **sensitivity** of the N you can actually get (Part 6)
+
+```{r}
+# your code here
+
+```
+
+**4. Make a power curve.** Pick the option that fits your key test.
+
+| Your key test | What to use |
+|---|---|
+| t-test or correlation | `pwr.t.test()` or `pwr.r.test()`, as in Parts 1 and 6 |
+| One-way ANOVA | `pwr.anova.test()`, or simulate |
+| Interaction, mixed model, nonparametric test, chains, anything else | Simulate. Use the wrapper below with your Lab 2 or project simulation |
+| Simulation project | Simulate. How does power to recover the key effect change with N, or with the number of runs? |
+
+To simulate, write a function that makes one fake dataset in the shape of *your* study, runs *your* planned test, and returns its p-value. Then the rest stays the same.
+
+```{r}
+#| eval: false
+one_experiment <- function(n) {
+  # 1. simulate one dataset with n participants
+  # 2. run your confirmatory test on it
+  # 3. return the p-value
+}
+
+my_power_curve <- tibble(n = seq(20, 200, by = 20)) |>
+  mutate(power = map_dbl(n, \(this_n) mean(map_dbl(1:200, \(i) one_experiment(this_n)) < .05)))
+
+ggplot(my_power_curve, aes(x = n, y = power)) +
+  geom_line() +
+  geom_hline(yintercept = .8, linetype = "dashed") +
+  ylim(0, 1)
+```
+
+Start with `1:200` while you debug. Use more once it works. Check that your function gives power near .05 when you set the effect to zero: if it doesn't, something is wrong with your simulation or your test.
+
+**5. Write the justification.** One paragraph with your numbers, in the style of Part 6: your goal, your constraint, your planned N, and what that N can and can't detect. This goes in the Power Analysis section of your report, and it's a draft of the sampling plan for your preregistration.
+
+*Your paragraph:*
+
+**To submit:** commit and push, then submit your repository link on Canvas with your power curve figure and your paragraph.
+
+# Bonus: mixed models
+
+If your key test is a mixed model, your simulated dataset needs one row per trial, and `one_experiment()` should fit the model. Here is a worked example for a within-subjects effect with a random intercept and slope for each person. It needs two more packages, `lme4` and `lmerTest`, and it is slow, so try it with few simulations first. If you see `singular` warnings at small N, that's common: your model can't estimate the random effects well from so few people.
+
+```{r}
+#| eval: false
+install.packages(c("lme4", "lmerTest")) # run once
+```
+
+```{r}
+#| eval: false
+library(lmerTest)
+
+one_lmm_experiment <- function(n_people, n_trials = 20, effect = 0.2,
+                               sd_intercept = 0.5, sd_slope = 0.2, sd_trial = 1) {
+  people <- tibble(person = 1:n_people,
+                   intercept = rnorm(n_people, 0, sd_intercept),
+                   slope = rnorm(n_people, effect, sd_slope))
+  trials <- people |>
+    cross_join(tibble(trial = 1:n_trials)) |>
+    mutate(condition = if_else(trial %% 2 == 0, 0.5, -0.5), # half the trials in each condition
+           y = intercept + slope * condition + rnorm(n(), 0, sd_trial))
+  fit <- suppressMessages(lmer(y ~ condition + (1 + condition | person), data = trials))
+  summary(fit)$coefficients["condition", "Pr(>|t|)"]
+}
+
+set.seed(9)
+
+lmm_power <- tibble(n_people = c(20, 40, 80)) |>
+  mutate(power = map_dbl(n_people, \(n) mean(map_dbl(1:100, \(i) one_lmm_experiment(n)) < .05)))
+
+lmm_power
+```
+
+The `simr` package does the same job starting from a model fit to pilot data or data you've simulated. If you use it, set the fixed effect to a value you've justified, not the one from your pilot (Part 4).
+
+# References
+
+-   Albers, C., & Lakens, D. (2018). When power analyses based on pilot data are biased: Inaccurate effect size estimators and follow-up bias. *Journal of Experimental Social Psychology, 74*, 187–195.
+-   Green, P., & MacLeod, C. J. (2016). SIMR: An R package for power analysis of generalized linear mixed models by simulation. *Methods in Ecology and Evolution, 7*(4), 493–498.
+-   Lakens, D. (2022). Sample size justification. *Collabra: Psychology, 8*(1), 33267.
+-   Simonsohn, U. (2013). [4] The folly of powering replications based on observed effect size. [Data Colada](https://datacolada.org/4).
+-   Simonsohn, U. (2015). Small telescopes: Detectability and the evaluation of replication results. *Psychological Science, 26*(5), 559–569.
