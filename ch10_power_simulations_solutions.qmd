@@ -356,7 +356,7 @@ To do: Answer these questions.
 
 1.  Yes, a little under 80%, close enough for a rule of thumb. With the same N as the original, power to reject d33 is a little under 50%.
 2.  It doesn't need the original estimate to be accurate. It depends only on the original's sample size, which isn't inflated by publication bias.
-3.  If the 90% CI on the replication effect lies entirely below d33 (this is the same as the one-sided test), the effect is too small for the original to have seen: an informative failure to replicate. If the CI includes both zero and d33, the replication is inconclusive. We come back to this comparison in Lab 7.
+3.  If the 90% CI on the replication effect lies entirely below d33 (this is the same as the one-sided test), the effect is too small for the original to have seen: an informative failure to replicate. If the CI includes both zero and d33, the replication is inconclusive.
 
 # Part 6: When your sample is fixed, flip the question
 
@@ -392,7 +392,7 @@ The other half of this argument is the **smallest effect size of interest** (SES
 
 To do: Finish this justification, following the example on the slides. The numbers should come from your code, using inline R as in Lab 1. Replace each `___`.
 
-> We did not have strong prior information about the likely effect size, so we were interested in effects as small as d = .3. We were limited to a maximum sample of `r fixed_n * 2` SONA participants. With this sample we have `r round(pwr.t.test(n = fixed_n, d = 0.3)$power * 100)`% power for d = .3, `r round(pwr.t.test(n = fixed_n, d = 0.5)$power * 100)`% power for d = .5, and 80% power for effects of d = `r round(smallest_d, 2)` or larger.
+> We did not have strong prior information about the likely effect size, so we were interested in effects as small as d = .3. We were limited to a maximum sample of `r fixed_n * 2` SONA participants. With this sample we have `r round(pwr.t.test(n = fixed_n, d = 0.3)$power * 100)`% power for d = .3, `r round(pwr.t.test(n = fixed_n, d = 0.5)$power * 100)`% power for d = .5, and 80% power for effects of d = `r sub("^0", "", sprintf("%.2f", smallest_d))` or larger.
 
 To do: In the reading responses, someone asked how a study can be "overpowered." With 100,000 people per group, what's your power for d = .02? Is more data a problem? What *is* the problem?
 
