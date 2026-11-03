@@ -71,7 +71,9 @@ functions defined in Parts 2 and 3, so run those chunks first. Fill in each
 
 **Short on time?** Do Parts 1, 3, 6, and 9, plus Part 8 if your paper doesn't
 report an effect size. Run the chunks in Part 2 that define the functions
-first, because Parts 3 and 8 use them.
+first, because Parts 3 and 8 use them. Two of the options in Part 9 build on
+parts you'd skip: safeguard power uses `d_ci()` from Part 8d, and the 2.5×
+rule comes from Part 5.
 
 `error: true` is set at the top of the file, so **Render works even while
 chunks are unfinished**: the unfinished chunks show their error in red.

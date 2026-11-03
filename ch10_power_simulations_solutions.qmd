@@ -25,7 +25,7 @@ This is the answer key. Your numbers will match these only if you render from sc
 
 `error: true` is set at the top of this file, so it still renders while some chunks are unfinished: those chunks show their error in red. Each part starts with its own `set.seed()`. Later parts use the functions defined in Parts 2 and 3, so run those first.
 
-**Short on time?** Do Parts 1, 3, 6, and 9, plus Part 8 if your paper doesn't report an effect size. Run the chunks in Part 2 that define the functions first, because Parts 3 and 8 use them. Part 9 is the one you hand in.
+**Short on time?** Do Parts 1, 3, 6, and 9, plus Part 8 if your paper doesn't report an effect size. Run the chunks in Part 2 that define the functions first, because Parts 3 and 8 use them. Two of the options in Part 9 build on parts you'd skip: safeguard power uses `d_ci()` from Part 8d (run that chunk), and the 2.5× rule comes from Part 5. Part 9 is the one you hand in.
 
 # Setup
 
@@ -352,7 +352,7 @@ To do: Answer these questions.
 
 1.  Does the 2.5× rule hold up?
 2.  Why is this a better plan for a replication than powering on the original effect?
-3.  What are the possible conclusions if your replication is *not* significant? When can you say "the effect is too small for the original study to have detected" and when can you only say "inconclusive"?
+3.  What are the possible conclusions if your replication is *not* significant? When can you say "the effect is too small for the original study to have detected" and when can you only say "inconclusive"? (Hint: picture the replication's 90% CI. Where can it fall relative to 0 and to d33?)
 
 **Answer.**
 
@@ -697,12 +697,32 @@ Example: a paper reports a paired t(44) = 3.98. Then N = 45, and d_z = 3.98 / �
 pwr.t.test(d = 3.98 / sqrt(45), power = .8, type = "paired")$n
 ```
 
+Some designs Part 8c didn't cover:
+
+| Your key test | Effect size and `pwr` function |
+|---|---|
+| Two proportions (e.g., % correct in two groups) | Cohen's h: `pwr.2p.test(h = ES.h(p1, p2), power = .8)`, where `n` is per group |
+| Chi-square test of a contingency table | Cohen's w: `pwr.chisq.test(w = w, df = df, power = .8)`, where `N` is the total |
+| Interaction in a 2×2, or a coefficient from a regression or mixed model | No simple conversion you can trust. Simulate (step 4 has a 2×2 example; the Bonus covers mixed models), and plan for an effect you can justify, not the reported one |
+
 **3. Decide what you'll plan for.** Don't stop at the published effect, for the reasons in Part 3. Compute at least two of these:
 
 -   Power for **half** the original effect, a simple correction for inflation (Camerer et al., 2018, on the slides, planned for 75% and then 50% of the original effect)
 -   The **2.5× original N** rule (Part 5)
 -   **Safeguard power**: the lower end of a 60% CI on the original effect (Part 8d)
 -   The **sensitivity** of the N you can actually get (Part 6)
+
+The 2.5× rule is for replications: it gives you an N directly (2.5 × the original N, counting people, not groups), so report it next to the others. `d_ci()` from Part 8d only works for two groups. For a within-subjects d_z from N people, use `dz_ci()` below, and remember `type = "paired"` in `pwr.t.test()`. It is approximate, and a little too narrow for small N.
+
+```{r}
+dz_ci <- function(dz, n, level = .95) {
+  se <- sqrt(1 / n + dz^2 / (2 * n))
+  z <- qnorm(1 - (1 - level) / 2)
+  c(lower = dz - z * se, upper = dz + z * se)
+}
+
+dz_ci(3.98 / sqrt(45), n = 45, level = .60) # safeguard d_z for the example above
+```
 
 ```{r}
 # your code here
@@ -715,10 +735,42 @@ pwr.t.test(d = 3.98 / sqrt(45), power = .8, type = "paired")$n
 |---|---|
 | t-test or correlation | `pwr.t.test()` or `pwr.r.test()`, as in Parts 1 and 6 |
 | One-way ANOVA | `pwr.anova.test()`, or simulate |
-| Interaction, mixed model, nonparametric test, chains, anything else | Simulate. Use the wrapper below with your Lab 2 or project simulation |
-| Simulation project | Simulate. How does power to recover the key effect change with N, or with the number of runs? |
+| Interaction, mixed model, nonparametric test, anything else | Simulate. Start from the examples and the wrapper below, or your Lab 2 or project simulation |
+| Simulation project | Simulate. Decide first what counts as recovering the key effect (e.g., the key parameter is significant in the predicted direction, or its estimate lands within some range of the true value), then ask how often that happens as N, or the number of runs, goes up |
 
 To simulate, write a function that makes one fake dataset in the shape of *your* study, runs *your* planned test, and returns its p-value. Then the rest stays the same.
+
+Here are two finished examples to copy from. The first is a two-group t-test, so you can check it against `pwr`. Its `n` is per group, and `effect` is Cohen's d.
+
+```{r}
+example_experiment <- function(n, effect) {
+  treatment <- rnorm(n, mean = effect, sd = 1)
+  control <- rnorm(n, mean = 0, sd = 1)
+  t.test(treatment, control, var.equal = TRUE)$p.value
+}
+
+set.seed(91)
+mean(map_dbl(1:500, \(i) example_experiment(64, effect = 0.5)) < .05) # simulation
+pwr.t.test(n = 64, d = 0.5)$power # formula
+mean(map_dbl(1:500, \(i) example_experiment(64, effect = 0)) < .05) # should be near .05
+```
+
+The second is the interaction in a between-subjects 2×2. Here `n` is per cell, so the total is `4 * n`, and `effect` is the difference between the two simple effects, in SD units. Coding each factor as −0.5 and 0.5 makes the `a:b` coefficient equal to exactly that difference.
+
+```{r}
+interaction_experiment <- function(n, effect) {
+  cells <- expand_grid(a = c(-0.5, 0.5), b = c(-0.5, 0.5), person = 1:n) |>
+    mutate(y = effect * a * b + rnorm(n(), mean = 0, sd = 1))
+  summary(lm(y ~ a * b, data = cells))$coefficients["a:b", "Pr(>|t|)"]
+}
+
+set.seed(92)
+mean(map_dbl(1:500, \(i) interaction_experiment(64, effect = 0.5)) < .05)
+```
+
+With 64 per cell, 256 people in total and twice as many as the t-test above, power for an interaction of .5 is only about 50%. Interactions need big samples. If your study is within-subjects, simulate one row per trial instead, as in the Bonus.
+
+Now write your own. The chunk below has `#| eval: false` so that the lab still renders before you've written anything. **Delete that line once your `one_experiment()` works**, or your power curve won't be in your rendered file.
 
 ```{r}
 #| eval: false
@@ -741,6 +793,12 @@ ggplot(my_power_curve, aes(x = n, y = power)) +
 Start with `1:200` while you debug. Use more once it works. Check that your function gives power near .05 when you run it with `effect = 0`: if it doesn't, something is wrong with your simulation or your test.
 
 **5. Write the justification.** One paragraph with your numbers, in the style of Part 6: your goal, your constraint, your planned N, and what that N can and can't detect. This goes in the Power Analysis section of your report, and it's a draft of the sampling plan for your preregistration.
+
+Your numbers from step 3 will probably disagree, and the most cautious one may be more people than you can get. That's normal. You don't have to run the largest N. Say what N you will actually run and why, then say what that N is powered for under each approach. If it falls short of what your planned effect needs, say so plainly and lean on the sensitivity analysis. "This is the N we could get, and here is what it can detect" is an honest justification (Lakens, 2022, calls it a resource constraint). What isn't honest is choosing an effect size after the fact so that your N looks powered.
+
+Here is an example for a replication, where the original study had 20 people per group and reported d = .8:
+
+> The original study (N = 40) reported d = .80. Because published effects tend to be inflated, we planned for half that effect, d = .40, which needs 100 participants per group for 80% power. That is more than we can recruit this quarter, so we will run 60 per group (N = 120). This is 3 times the original sample, which gives more than 80% power to reject d33 = .50, the effect the original study had 33% power to detect (Simonsohn, 2015). It also gives 80% power for effects of d = .52 or larger. A non-significant result would tell us whether the effect is as large as the original study could have detected, but not whether there is a smaller effect, below about d = .5.
 
 *Your paragraph:*
 
