@@ -27,7 +27,7 @@ we move to a plain two-group study so that effects are in units of Cohen's d.
 > [Simulation Lab 2](https://github.com/psyc-201/inference_simulations_lab_2) and
 > [Simulation Lab 3](https://github.com/psyc-201/reliability_simulation_exercises).
 > This lab needs the tidyverse and one new package, `pwr`. The optional bonus
-> also uses `lme4` and `lmerTest`.
+> also uses `lme4`, `lmerTest`, and `simr`.
 
 ---
 
@@ -67,7 +67,7 @@ functions defined in Parts 2 and 3, so run those chunks first. Fill in each
 | 7. People or trials | Trade participants for trials on a fixed budget |
 | 8. Getting an effect size | Cohen's d by hand, d_z vs. d_av, converting reported statistics, and a CI on d |
 | 9. Your project | Power analysis, power curve, and justification for your study |
-| Bonus | Power for a mixed model by simulation (optional) |
+| Bonus | Power for a mixed model by simulation, by hand and with `simr` (optional) |
 
 **Short on time?** Do Parts 1, 3, 6, and 9, plus Part 8 if your paper doesn't
 report an effect size.

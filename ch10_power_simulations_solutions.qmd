@@ -144,7 +144,7 @@ To do: Do they agree? If the dots sit a little below the line, why might that be
 
 In Lab 2 you got to choose the true effect. The usual real-world move is to look up the original paper and plug in its effect size. Let's see what happens if you do that.
 
-`simulate_study()` runs one two-group study with a true effect of `true_d`, and returns the observed effect size and p-value. The observed d comes from the t statistic, using the trick from the slides: d = t × √(2/n), where n is the sample size per group.
+`simulate_study()` runs one two-group study with a true effect of `true_d`, and returns the observed effect size and p-value. The observed d comes from the t statistic, using the trick : d = t × √(2/n), where n is the sample size per group.
 
 ```{r}
 simulate_study <- function(n_per_group, true_d) {
@@ -777,7 +777,62 @@ lmm_power <- tibble(n_people = c(20, 40, 80)) |>
 lmm_power
 ```
 
-The `simr` package does the same job starting from a model fit to pilot data or data you've simulated. If you use it, set the fixed effect to a value you've justified, not the one from your pilot (Part 4).
+## Doing the same thing with `simr`
+
+Writing `one_lmm_experiment()` yourself shows you exactly what a power simulation does. The `simr` package (Green & MacLeod, 2016) does the same job with less code. You give it a fitted model, and it simulates new datasets from that model, refits the model to each one, and counts how often the effect is significant.
+
+It works in three steps:
+
+1.  **Fit your model once** to some data: your pilot data, or one fake dataset like the one below.
+2.  **Set the effect to the value you want to plan for**, with `fixef()`. Use a value you can justify, not whatever your pilot happened to show (Part 4).
+3.  **Ask for power.** `powerSim()` gives power at the sample size you have. `extend()` and `powerCurve()` give power at larger sample sizes.
+
+`simr` also borrows the random-effect SDs and the trial-level SD from the model you fit in step 1. With a small pilot those are uncertain too, so treat the answer as a rough guide.
+
+```{r}
+#| eval: false
+install.packages("simr") # run once
+```
+
+```{r}
+#| eval: true
+library(lmerTest)
+library(simr)
+
+set.seed(10)
+
+# Step 1: one fake dataset with 20 people and 20 trials each, the same design
+# as one_lmm_experiment() above, and the model fit to it
+pilot_people <- tibble(person = 1:20,
+                       intercept = rnorm(20, 0, 0.5),
+                       slope = rnorm(20, 0.2, 0.2))
+pilot <- pilot_people |>
+  cross_join(tibble(trial = 1:20)) |>
+  mutate(condition = if_else(trial %% 2 == 0, 0.5, -0.5),
+         y = intercept + slope * condition + rnorm(n(), 0, 1))
+
+pilot_fit <- lmer(y ~ condition + (1 + condition | person), data = pilot)
+fixef(pilot_fit) # the effect this fake pilot happened to give
+
+# Step 2: plan for the effect you can justify
+fixef(pilot_fit)["condition"] <- 0.2
+
+# Step 3a: power with the 20 people you have
+powerSim(pilot_fit, test = fixed("condition", "t"), nsim = 100, progress = FALSE)
+
+# Step 3b: power with 20, 40, and 80 people
+bigger_fit <- extend(pilot_fit, along = "person", n = 80)
+simr_curve <- powerCurve(bigger_fit, test = fixed("condition", "t"), along = "person",
+                         breaks = c(20, 40, 80), nsim = 100, progress = FALSE)
+simr_curve
+plot(simr_curve)
+```
+
+To use this for your own study, change three things: the data in step 1 (your pilot, or a fake dataset shaped like your study), the formula in `lmer()`, and the name of your effect, here `"condition"`, everywhere it appears. `nsim = 100` takes about 20 seconds here. Use more, say 500, for the numbers you report. If the Console fills with `boundary (singular) fit` messages, that's the same warning described above, and you can ignore it here.
+
+To do: Compare `simr`'s power at 20, 40, and 80 people with `lmm_power` from the chunk above. Should they agree?
+
+**Answer.** They should agree up to simulation noise, because both simulate the same design with the same effect. Here `simr` gives about 39%, 72%, and 96%, and `lmm_power` gives 44%, 67%, and 94%. With only 100 simulations per sample size, differences of 5 points are expected.
 
 # References
 
