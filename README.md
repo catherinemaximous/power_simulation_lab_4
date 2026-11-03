@@ -70,7 +70,8 @@ functions defined in Parts 2 and 3, so run those chunks first. Fill in each
 | Bonus | Power for a mixed model by simulation, by hand and with `simr` (optional) |
 
 **Short on time?** Do Parts 1, 3, 6, and 9, plus Part 8 if your paper doesn't
-report an effect size.
+report an effect size. Run the chunks in Part 2 that define the functions
+first, because Parts 3 and 8 use them.
 
 `error: true` is set at the top of the file, so **Render works even while
 chunks are unfinished**: the unfinished chunks show their error in red.
@@ -80,8 +81,9 @@ chunks are unfinished**: the unfinished chunks show their error in red.
 ## Part 4. Commit, push, and submit
 
 Commit as you go. When you are finished, render once more, commit with a
-message like `Finish power lab`, **Push origin**, and submit the link to your
-repository however your instructor asks. Rendered `.html` files are ignored by
+message like `Finish power lab`, **Push origin**, and submit your repository
+link on Canvas with your Part 9 power curve figure and paragraph (the end of
+Part 9 says how to save the figure). Rendered `.html` files are ignored by
 git, so only your `.qmd` is pushed. Your Part 9 paragraph goes into the Power
 Analysis section of your own project report.
 
@@ -105,7 +107,7 @@ There is no `data/` folder: you make all the data yourself.
 3. **Your required N looks half as big as it should:** `n` in `pwr.t.test()` is
    per group. Multiply by two for the total.
 4. **`could not find function "simulate_study"`** (or `n_for_80`,
-   `estimate_power`): run the chunks in Parts 2 and 3 that define them.
+   `estimate_power`, `make_tea_data`): run the chunks in Parts 2 and 3 that define them.
 5. **`uniroot` error from `pwr.t.test()`:** the effect size is at or very near
    zero, so no sample size can reach your target power.
 6. **Your numbers differ from the solutions:** expected, unless you render from
