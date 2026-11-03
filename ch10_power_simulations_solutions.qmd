@@ -114,7 +114,7 @@ estimate_power <- function(n_total, delta, n_sims = 500) {
 
 `pwr` needs Cohen's d, so divide the difference in scale points by the standard deviation: `delta / sigma`. With `delta = 1` and `sigma = 1.25`, d = .8.
 
-To do: Fill in the blanks to compute power at each sample size both ways. This runs 5,000 simulated experiments, so give it several seconds.
+To do: Fill in the blanks to compute power at each sample size both ways. This runs 5,000 simulated experiments, so let it finish.
 
 ```{r}
 set.seed(2)
@@ -207,7 +207,7 @@ n_for_80 <- function(d) {
 n_for_80(0.8) # what you'd plan from a typical published study (per group)
 ```
 
-To do: For every published study, work out the planned sample size, then the power that replication *actually* has, given that the truth is d = .3. Fill in the blanks. This does about 750 power analyses, so give it a few seconds.
+To do: For every published study, work out the planned sample size, then the power that replication *actually* has, given that the truth is d = .3. Fill in the blanks. This does about 750 power analyses, so let it finish.
 
 ```{r}
 replications <- literature |>

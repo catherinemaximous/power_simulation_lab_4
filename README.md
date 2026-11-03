@@ -56,18 +56,18 @@ Run one chunk at a time with the green arrow, top to bottom. Later parts use
 functions defined in Parts 2 and 3, so run those chunks first. Fill in each
 `___`.
 
-| Part | What you do | About |
-|---|---|---|
-| 1. Probing your intuitions | Guess the power of five studies, then check with `pwr` | 10 min |
-| 2. Same answer, two ways | Compare `pwr` to simulation | 10 min |
-| 3. The published effect | Simulate a biased literature, then power replications on it | 20 min |
-| 4. The pilot | Write your own simulation of powering on a pilot | 15 min |
-| 5. Small telescopes | Find d33 and test the 2.5× rule | 15 min |
-| 6. Fixed samples | Sensitivity analysis, smallest effect of interest, and a justification paragraph | 15 min |
-| 7. People or trials | Trade participants for trials on a fixed budget | 10 min |
-| 8. Getting an effect size | Cohen's d by hand, d_z vs. d_av, converting reported statistics, and a CI on d | 20 min |
-| 9. Your project | Power analysis, power curve, and justification for your study | the rest |
-| Bonus | Power for a mixed model by simulation | optional |
+| Part | What you do |
+|---|---|
+| 1. Probing your intuitions | Guess the power of five studies, then check with `pwr` |
+| 2. Same answer, two ways | Compare `pwr` to simulation |
+| 3. The published effect | Simulate a biased literature, then power replications on it |
+| 4. The pilot | Write your own simulation of powering on a pilot |
+| 5. Small telescopes | Find d33 and test the 2.5× rule |
+| 6. Fixed samples | Sensitivity analysis, smallest effect of interest, and a justification paragraph |
+| 7. People or trials | Trade participants for trials on a fixed budget |
+| 8. Getting an effect size | Cohen's d by hand, d_z vs. d_av, converting reported statistics, and a CI on d |
+| 9. Your project | Power analysis, power curve, and justification for your study |
+| Bonus | Power for a mixed model by simulation (optional) |
 
 **Short on time?** Do Parts 1, 3, 6, and 9, plus Part 8 if your paper doesn't
 report an effect size.
@@ -110,8 +110,7 @@ There is no `data/` folder: you make all the data yourself.
    zero, so no sample size can reach your target power.
 6. **Your numbers differ from the solutions:** expected, unless you render from
    scratch. Every rerun of a chunk draws new random numbers.
-7. **Some chunks take a few seconds.** Let them finish. The whole answer key
-   renders in under a minute.
+7. **Some chunks are slow.** Let them finish.
 8. Still stuck? Post the **exact** error message in the course forum.
 
 ## Resources
