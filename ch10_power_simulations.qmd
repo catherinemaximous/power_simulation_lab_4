@@ -1,7 +1,7 @@
 ---
 title: "Power and Sample Size Planning"
 subtitle: "PSYC 201A, Simulation Lab 4"
-author: "Catherine Maximous"
+author: "Catherine"
 date: today
 format:
   html:
