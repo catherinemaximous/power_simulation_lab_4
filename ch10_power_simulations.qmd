@@ -1,7 +1,7 @@
 ---
 title: "Power and Sample Size Planning"
 subtitle: "PSYC 201A, Simulation Lab 4"
-author: "Your name here"
+author: "Catherine Maximous"
 date: today
 format:
   html:
@@ -53,24 +53,40 @@ A few terms first. **Power** is the chance that a study gets a significant resul
 
 Before you touch any code, guess the power of each of these studies. Type your guesses into the table. Be honest: this works better if you are wrong.
 
-| Test | Effect | Total N | Your guess | Power from `pwr` |
-|---|---|---|---|---|
-| Two-group t-test | d = .5 | 24 | | |
-| Two-group t-test | d = .8 | 36 | | |
-| Two-group t-test | d = .3 | 120 | | |
-| Correlation | r = .5 | 36 | | |
-| Correlation | r = .3 | 80 | | |
++------------------+--------+---------+------------+------------------+
+| Test             | Effect | Total N | Your guess | Power from `pwr` |
++==================+========+=========+============+==================+
+| Two-group t-test | d = .5 | 24      | .50        | ```              |
+|                  |        |         |            | 0.3959904        |
+|                  |        |         |            | ```              |
++------------------+--------+---------+------------+------------------+
+| Two-group t-test | d = .8 | 36      | .75        | ```              |
+|                  |        |         |            | 0.9173135        |
+|                  |        |         |            | ```              |
++------------------+--------+---------+------------+------------------+
+| Two-group t-test | d = .3 | 120     | .80        | ```              |
+|                  |        |         |            | 0.6385054        |
+|                  |        |         |            | ```              |
++------------------+--------+---------+------------+------------------+
+| Correlation      | r = .5 | 36      | .20        | ```              |
+|                  |        |         |            | 0.8911911        |
+|                  |        |         |            | ```              |
++------------------+--------+---------+------------+------------------+
+| Correlation      | r = .3 | 80      | .75        | ```              |
+|                  |        |         |            | 0.7796541        |
+|                  |        |         |            | ```              |
++------------------+--------+---------+------------+------------------+
 
 Now check them. **Watch out:** in `pwr.t.test()`, `n` means participants *per group*, not the total. This is the most common way to get a power analysis wrong, in `pwr` and in G\*Power. In `pwr.r.test()`, `n` is just the number of people.
 
 To do: Fill in each `___`, then fill in the last column of the table.
 
 ```{r}
-pwr.t.test(n = ___, d = 0.5, sig.level = .05)$power
-pwr.t.test(n = ___, d = ___, sig.level = .05)$power
-pwr.t.test(n = ___, d = ___, sig.level = .05)$power
-pwr.r.test(n = ___, r = 0.5, sig.level = .05)$power
-pwr.r.test(n = ___, r = ___, sig.level = .05)$power
+pwr.t.test(n = 24, d = 0.5, sig.level = .05)$power
+pwr.t.test(n = 36, d = 0.8, sig.level = .05)$power
+pwr.t.test(n = 120, d = 0.3, sig.level = .05)$power
+pwr.r.test(n = 36, r = 0.5, sig.level = .05)$power
+pwr.r.test(n = 80, r = 0.3, sig.level = .05)$power
 ```
 
 Power depends on four numbers: `n`, the effect size, `sig.level`, and `power`. Give `pwr` any three and it solves for the fourth. This is the classic **a priori power analysis**, done before you collect any data: leave `n` out, and set `power`.
@@ -78,8 +94,8 @@ Power depends on four numbers: `n`, the effect size, `sig.level`, and `power`. G
 To do: How many participants, in total, do you need for 80% power to detect d = .5? What about d = .3? Round up, because you can't run part of a person, and remember that `n` is per group.
 
 ```{r}
-n_d5 <- pwr.t.test(d = 0.5, power = ___, sig.level = .05)$n
-n_d3 <- pwr.t.test(d = ___, power = .8, sig.level = .05)$n
+n_d5 <- pwr.t.test(d = 0.5, power = .8, sig.level = .05)$n
+n_d3 <- pwr.t.test(d = 0.3, power = .8, sig.level = .05)$n
 
 ceiling(n_d5) * 2 # total N
 ceiling(n_d3) * 2
@@ -120,8 +136,8 @@ To do: Fill in the blanks to compute power at each sample size both ways, using 
 set.seed(2)
 
 power_check <- tibble(n_total = seq(10, 100, by = 10)) |>
-  mutate(simulated = map_dbl(n_total, \(n) estimate_power(n, delta = ___)),
-         formula = map_dbl(n_total, \(n) pwr.t.test(n = ___, d = ___)$power))
+  mutate(simulated = map_dbl(n_total, \(n) estimate_power(n, delta = 1)),
+         formula = map_dbl(n_total, \(n) pwr.t.test(n = n/2, d = .8)$power))
 
 power_check
 ```
@@ -137,6 +153,8 @@ power_check |>
 ```
 
 To do: Do they agree? If there is a gap, with the dots a little below the line, why might that be? (Hint: look at what `make_tea_data()` does to the ratings. What does `pwr` assume about them?)
+
+They do agree and while there might be a slight gap, this is due to the simulated data being n = 500 therefore there is some noise that is rounded up for a better estimate.
 
 # Part 3: Why you shouldn't power on the published effect
 
@@ -172,14 +190,14 @@ To do: Add a column `published` that is `TRUE` when `p < .05` and `d_hat > 0`. T
 
 ```{r}
 literature <- literature |>
-  mutate(published = ___)
+  mutate(published = p < .05 & d_hat > 0)
 
 literature |>
   group_by(published) |>
   summarize(n_studies = n(),
-            mean_d = ___)
+            mean_d = mean(d_hat))
 
-mean(literature$d_hat) # all studies
+mean(literature$d_hat)  # all studies
 ```
 
 ```{r}
@@ -192,6 +210,13 @@ literature |>
 ```
 
 To do: What percent of studies got published, and what does that tell you about the power of these studies? What is the average published effect, compared to the truth? (Hint: divide `n_studies` for the published row by 5,000, and compare it with `pwr.t.test(n = 20, d = 0.3)$power`.)
+
+The average published studies is 15% that have .80 power which is a small subset of studies that actually detect an effect.
+
+```{r}
+768/5000
+pwr.t.test(n = 20, d = 0.3)$power
+```
 
 Now you read one of those published papers and plan a replication with 80% power, using its effect size. `n_for_80()` does the a priori calculation.
 
@@ -209,7 +234,7 @@ To do: For every published study, work out the planned sample size, then the pow
 replications <- literature |>
   filter(published) |>
   mutate(planned_n = map_dbl(d_hat, n_for_80),
-         actual_power = map_dbl(planned_n, \(n) pwr.t.test(n = n, d = ___)$power))
+         actual_power = map_dbl(planned_n, \(n) pwr.t.test(n = n, d = .3)$power))
 
 mean(replications$actual_power)
 ```
@@ -227,8 +252,21 @@ replications |>
 To do: Answer these questions.
 
 1.  Everyone claimed 80% power. What did they really have, on average?
+
+    ```         
+    0.1929818 ~ 20%
+    ```
+
 2.  How many participants per group would it have taken to have 80% power for the true effect? Compare that to `median(replications$planned_n)`.
+
+    ```{r}
+    n_for_80(0.3)
+    median(replications$planned_n)
+    ```
+
 3.  If one of these replications comes out non-significant, how much does that tell you?
+
+    It tells you that these studies were under-powered and that there is very little they can actually tell you about the observed effect.
 
 # Part 4: Why you shouldn't power on your pilot
 
@@ -247,14 +285,40 @@ To do: Write this part yourself, following Part 3.
 ```{r}
 set.seed(4)
 
-# your code here
+pilots <- tibble(pilot = 1:2000) |>
+  mutate(result = map(pilot, \(i) simulate_study(n_per_group = 10, true_d = 0.4))) |>
+  unnest(result) |>
+  mutate(go = d_hat > 0.2)
+
+mean(!pilots$go) 
+
+followups <- pilots |>
+  filter(go) |>
+  mutate(planned_n = map_dbl(d_hat, n_for_80),
+         actual_power = map_dbl(planned_n, \(n) pwr.t.test(n = n, d = 0.4)$power))
+
+quantile(followups$planned_n, c(.1, .5, .9))
+mean(followups$actual_power)
 
 ```
 
 ```{r}
+followups |>
+  ggplot(aes(x = planned_n)) +
+  geom_histogram(bins = 40, fill = "steelblue") +
+  scale_x_log10() +
+  geom_vline(xintercept = n_for_80(0.4), linetype = "dashed") +
+  labs(x = "Planned n per group (log scale)", y = "Number of pilots",
+       title = "Dashed line: the sample you actually needed")
 ```
 
 To do: The sample you actually needed is `n_for_80(0.4)` per group. What did your pilots tell you to run instead? Would you trust an effect size from your 10-per-group pilot?
+
+The sample I actually needed is 100 per group but the pilots had a larger range from 14 to 198 participants as the power increases. Therefore, the pilot is a good way to check for any paradigm issues however I would not trust an effect from a 10 per group pilot.
+
+```{r}
+n_for_80(0.4)
+```
 
 # Part 5: Small telescopes, or how big should a replication be?
 
@@ -408,7 +472,7 @@ Every power analysis so far started from an effect size someone handed you. For 
 
 Cohen's d is the difference between two means divided by the standard deviation within groups. With two groups, that SD is the **pooled SD**, a weighted average of the two groups' variances:
 
-pooled SD = √[((n₁ − 1)·s₁² + (n₂ − 1)·s₂²) / (n₁ + n₂ − 2)]
+pooled SD = √\[((n₁ − 1)·s₁² + (n₂ − 1)·s₂²) / (n₁ + n₂ − 2)\]
 
 The first chunk below simulates one tea experiment with `delta = 1`, a true d of .8 as in Part 2.
 
@@ -447,8 +511,8 @@ To do: Do the two numbers agree? Is your estimate .8? Why not?
 
 When the same people are measured twice, there are two common versions of d, and they can be very different.
 
--   **d_av** divides the mean difference by the average SD of the two measurements. It is on the same scale as a between-groups d.
--   **d_z** divides the mean difference by the SD of the *difference scores*. This is what `pwr.t.test(type = "paired")` needs, and what you get from a paired t-test with d_z = t / √N.
+- **d_av** divides the mean difference by the average SD of the two measurements. It is on the same scale as a between-groups d.
+- **d_z** divides the mean difference by the SD of the *difference scores*. This is what `pwr.t.test(type = "paired")` needs, and what you get from a paired t-test with d_z = t / √N.
 
 The correlation r between the two measurements links them: d_z = d_av / √(2(1 − r)).
 
@@ -488,15 +552,23 @@ To do: Answer these questions.
 
 Most papers won't give you their data. These are the conversions you'll need most often.
 
-| What the paper reports | How to get an effect size |
-|---|---|
-| Two-group t-test: t, n₁, n₂ | d = t × √(1/n₁ + 1/n₂) |
-| Paired t-test: t, N | d_z = t / √N |
-| F(1, df) comparing two groups | t = √F, then as above |
-| Means and SDs | d = (M₁ − M₂) / pooled SD, as in 8a |
-| Means and SEMs | SD = SEM × √n, then as above |
-| Correlation r | r is already an effect size: use `pwr.r.test(r = r, power = .8)`, where `n` is the total number of people. If you need d: d = 2r / √(1 − r²) |
-| One-way ANOVA, F(df₁, df₂) | partial η², the share of variance explained by condition, is F·df₁ / (F·df₁ + df₂). Then Cohen's f = √(η² / (1 − η²)), and use `pwr.anova.test(k = number of groups, f = f, power = .8)`, where `n` is per group |
++----------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| What the paper reports           | How to get an effect size                                                                                                                                                                                        |
++==================================+==================================================================================================================================================================================================================+
+| Two-group t-test: t, n₁, n₂      | d = t × √(1/n₁ + 1/n₂)                                                                                                                                                                                           |
++----------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Paired t-test: t, N              | d_z = t / √N                                                                                                                                                                                                     |
++----------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| F(1, df) comparing two groups    | t = √F, then as above                                                                                                                                                                                            |
++----------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Means and SDs                    | d = (M₁ − M₂) / pooled SD, as in 8a                                                                                                                                                                              |
++----------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Means and SEMs                   | SD = SEM × √n, then as above                                                                                                                                                                                     |
++----------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Correlation r                    | r is already an effect size: use `pwr.r.test(r = r, power = .8)`, where `n` is the total number of people. If you need d: d = 2r / √(1 − r²)                                                                     |
++----------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| One-way ANOVA, F(df₁, df₂)       | partial η², the share of variance explained by condition, is F·df₁ / (F·df₁ + df₂). Then Cohen's f = √(η² / (1 − η²)), and use `pwr.anova.test(k = number of groups, f = f, power = .8)`, where `n` is per group |
++----------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 If a paper only shows a figure, you can read the means and error bars off it with [WebPlotDigitizer](https://automeris.io/WebPlotDigitizer/).
 
@@ -532,7 +604,7 @@ To do: Does the p-value in result 1 match its t?
 
 A **95% confidence interval** (CI) is a range of effect sizes that fit the data: if you ran the same study many times, 95% of the intervals made this way would contain the true effect. An effect size from one study has a CI too, and with small samples it is wide. For two groups, the standard error of d is approximately
 
-SE(d) = √[(n₁ + n₂) / (n₁·n₂) + d² / (2(n₁ + n₂))]
+SE(d) = √\[(n₁ + n₂) / (n₁·n₂) + d² / (2(n₁ + n₂))\]
 
 ```{r}
 d_ci <- function(d, n1, n2, level = .95) {
@@ -592,18 +664,22 @@ pwr.t.test(d = 3.98 / sqrt(45), power = .8, type = "paired")$n
 
 Some designs Part 8c didn't cover:
 
-| Your key test | Effect size and `pwr` function |
-|---|---|
-| Two proportions (e.g., % correct in two groups) | Cohen's h: `pwr.2p.test(h = ES.h(p1, p2), power = .8)`, where `n` is per group |
-| Chi-square test of a contingency table | Cohen's w: `pwr.chisq.test(w = w, df = df, power = .8)`, where `N` is the total |
++-------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Your key test                                                           | Effect size and `pwr` function                                                                                                                                       |
++=========================================================================+======================================================================================================================================================================+
+| Two proportions (e.g., % correct in two groups)                         | Cohen's h: `pwr.2p.test(h = ES.h(p1, p2), power = .8)`, where `n` is per group                                                                                       |
++-------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Chi-square test of a contingency table                                  | Cohen's w: `pwr.chisq.test(w = w, df = df, power = .8)`, where `N` is the total                                                                                      |
++-------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Interaction in a 2×2, or a coefficient from a regression or mixed model | No simple conversion you can trust. Simulate (step 4 has a 2×2 example; the Bonus covers mixed models), and plan for an effect you can justify, not the reported one |
++-------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 **3. Decide what you'll plan for.** Don't stop at the published effect, for the reasons in Part 3. Compute at least two of these:
 
--   Power for **half** the original effect, a simple correction for inflation (Camerer et al., 2018, on the slides, planned for 75% and then 50% of the original effect)
--   The **2.5× original N** rule (Part 5)
--   **Safeguard power**: the lower end of a 60% CI on the original effect (Part 8d)
--   The **sensitivity** of the N you can actually get (Part 6)
+- Power for **half** the original effect, a simple correction for inflation (Camerer et al., 2018, on the slides, planned for 75% and then 50% of the original effect)
+- The **2.5× original N** rule (Part 5)
+- **Safeguard power**: the lower end of a 60% CI on the original effect (Part 8d)
+- The **sensitivity** of the N you can actually get (Part 6)
 
 The 2.5× rule is for replications: it gives you an N directly (2.5 × the original N, counting people, not groups), so report it next to the others. `d_ci()` from Part 8d only works for two groups. For a within-subjects d_z from N people, use `dz_ci()` below, and remember `type = "paired"` in `pwr.t.test()`. It is approximate, and a little too narrow for small N.
 
@@ -624,12 +700,17 @@ dz_ci(3.98 / sqrt(45), n = 45, level = .60) # safeguard d_z for the example abov
 
 **4. Make a power curve.** Pick the option that fits your key test.
 
-| Your key test | What to use |
-|---|---|
-| t-test or correlation | `pwr.t.test()` or `pwr.r.test()`, as in Parts 1 and 6 |
-| One-way ANOVA | `pwr.anova.test()`, or simulate |
-| Interaction, mixed model, nonparametric test, anything else | Simulate. Start from the examples and the wrapper below, or your Lab 2 or project simulation |
-| Simulation project | Simulate. Decide first what counts as recovering the key effect (e.g., the key parameter is significant in the predicted direction, or its estimate lands within some range of the true value), then ask how often that happens as N, or the number of runs, goes up |
++-------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Your key test                                               | What to use                                                                                                                                                                                                                                                          |
++=============================================================+======================================================================================================================================================================================================================================================================+
+| t-test or correlation                                       | `pwr.t.test()` or `pwr.r.test()`, as in Parts 1 and 6                                                                                                                                                                                                                |
++-------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| One-way ANOVA                                               | `pwr.anova.test()`, or simulate                                                                                                                                                                                                                                      |
++-------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Interaction, mixed model, nonparametric test, anything else | Simulate. Start from the examples and the wrapper below, or your Lab 2 or project simulation                                                                                                                                                                         |
++-------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Simulation project                                          | Simulate. Decide first what counts as recovering the key effect (e.g., the key parameter is significant in the predicted direction, or its estimate lands within some range of the true value), then ask how often that happens as N, or the number of runs, goes up |
++-------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 To simulate, write a function that makes one fake dataset in the shape of *your* study, runs *your* planned test, and returns its p-value. Then the rest stays the same.
 
@@ -788,10 +869,10 @@ To do: Compare `simr`'s power at 20, 40, and 80 people with `lmm_power` from the
 
 # References
 
--   Albers, C., & Lakens, D. (2018). When power analyses based on pilot data are biased: Inaccurate effect size estimators and follow-up bias. *Journal of Experimental Social Psychology, 74*, 187–195.
--   Green, P., & MacLeod, C. J. (2016). SIMR: An R package for power analysis of generalized linear mixed models by simulation. *Methods in Ecology and Evolution, 7*(4), 493–498.
--   Lakens, D. (2013). Calculating and reporting effect sizes to facilitate cumulative science: A practical primer for t-tests and ANOVAs. *Frontiers in Psychology, 4*, 863.
--   Lakens, D. (2022). Sample size justification. *Collabra: Psychology, 8*(1), 33267.
--   Perugini, M., Gallucci, M., & Costantini, G. (2014). Safeguard power as a protection against imprecise power estimates. *Perspectives on Psychological Science, 9*(3), 319–332.
--   Simonsohn, U. (2013). [4] The folly of powering replications based on observed effect size. [Data Colada](https://datacolada.org/4).
--   Simonsohn, U. (2015). Small telescopes: Detectability and the evaluation of replication results. *Psychological Science, 26*(5), 559–569.
+- Albers, C., & Lakens, D. (2018). When power analyses based on pilot data are biased: Inaccurate effect size estimators and follow-up bias. *Journal of Experimental Social Psychology, 74*, 187–195.
+- Green, P., & MacLeod, C. J. (2016). SIMR: An R package for power analysis of generalized linear mixed models by simulation. *Methods in Ecology and Evolution, 7*(4), 493–498.
+- Lakens, D. (2013). Calculating and reporting effect sizes to facilitate cumulative science: A practical primer for t-tests and ANOVAs. *Frontiers in Psychology, 4*, 863.
+- Lakens, D. (2022). Sample size justification. *Collabra: Psychology, 8*(1), 33267.
+- Perugini, M., Gallucci, M., & Costantini, G. (2014). Safeguard power as a protection against imprecise power estimates. *Perspectives on Psychological Science, 9*(3), 319–332.
+- Simonsohn, U. (2013). \[4\] The folly of powering replications based on observed effect size. [Data Colada](https://datacolada.org/4).
+- Simonsohn, U. (2015). Small telescopes: Detectability and the evaluation of replication results. *Psychological Science, 26*(5), 559–569.
